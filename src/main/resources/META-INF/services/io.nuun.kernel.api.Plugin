@@ -1,0 +1,2 @@
+org.seedstack.kafka.internal.ClientsPlugin
+org.seedstack.kafka.internal.StreamsPlugin
