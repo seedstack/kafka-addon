@@ -1,0 +1,168 @@
+<!--
+
+    Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.seedstack.poms</groupId>
+        <artifactId>parent-internal</artifactId>
+        <version>3.0.0</version>
+    </parent>
+
+    <groupId>org.seedstack.addons</groupId>
+    <artifactId>kafka</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <properties>
+        <seed.version>3.2.0</seed.version>
+        <compatibility.version>3.0.0</compatibility.version>
+        <bintray.package>kafka-addon</bintray.package>
+        <kafka-clients.version>0.11.0.0</kafka-clients.version>
+        <kafka-streams.version>0.11.0.0</kafka-streams.version>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <configuration>
+                        <includedLicenses>
+                            <includedLicense>Apache 2</includedLicense>
+                            <includedLicense>BSD</includedLicense>
+                            <includedLicense>CDDL</includedLicense>
+                            <includedLicense>EPL 1.0</includedLicense>
+                            <includedLicense>LGPL 2.1</includedLicense>
+                            <includedLicense>LGPL 3.0</includedLicense>
+                            <includedLicense>MIT</includedLicense>
+                            <includedLicense>MPL 1.1</includedLicense>
+                            <includedLicense>MPL 2.0</includedLicense>
+                            <includedLicense>Public Domain</includedLicense>
+                            <includedLicense>The JSON License</includedLicense>
+                            <includedLicense>WTFPL</includedLicense>
+
+                            <!-- Some licenses are ignored because they are alternatives to acceptable licenses and the plugin doesn't handle alternate licenses -->
+                            <includedLicense>IGNORED_LICENSE</includedLicense>
+                        </includedLicenses>
+                        <licenseMerges>
+                            <licenseMerge>Apache 2|Apache License, Version 2.0</licenseMerge>
+                            <licenseMerge>Apache 2|The Apache Software License, Version 2.0</licenseMerge>
+                            <licenseMerge>Apache 2|Apache License 2.0</licenseMerge>
+                            <licenseMerge>Apache 2|Apache License, version 2.0</licenseMerge>
+                            <licenseMerge>Apache 2|Apache License Version 2.0</licenseMerge>
+                            <licenseMerge>BSD|The New BSD License</licenseMerge>
+                            <licenseMerge>BSD|New BSD License</licenseMerge>
+                            <licenseMerge>CDDL|CDDL + GPLv2 with classpath exception</licenseMerge>
+                            <licenseMerge>EPL 1.0|Eclipse Public License 1.0</licenseMerge>
+                            <licenseMerge>LGPL 3.0|GNU Lesser Public License</licenseMerge>
+                            <licenseMerge>MIT|MIT License</licenseMerge>
+                            <licenseMerge>MIT|The MIT License</licenseMerge>
+                        </licenseMerges>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <scm>
+        <url>https://github.com/seedstack/spring-addon</url>
+        <connection>scm:git:git://github.com/seedstack/spring-addon.git</connection>
+        <developerConnection>scm:git:git@github.com:seedstack/spring-addon.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>bintray-jfrog-jfrog-jars</id>
+            <name>bintray-plugins</name>
+            <url>http://dl.bintray.com/jfrog/jfrog-jars</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <profiles>
+        <profile>
+            <id>snapshots</id>
+            <repositories>
+                <repository>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                    <id>ojo-libs-snapshot</id>
+                    <name>ojo-snapshots</name>
+                    <url>https://oss.jfrog.org/artifactory/libs-snapshot</url>
+                </repository>
+            </repositories>
+        </profile>
+        <profile>
+            <id>bintray</id>
+            <repositories>
+                <repository>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <id>bintray</id>
+                    <name>bintray</name>
+                    <url>http://dl.bintray.com/seedstack/jars</url>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.seedstack.seed</groupId>
+            <artifactId>seed-core</artifactId>
+            <version>${seed.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>${kafka-clients.version}</version>
+            <optional>true</optional>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-streams</artifactId>
+            <version>${kafka-streams.version}</version>
+            <optional>true</optional>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.seedstack.seed</groupId>
+            <artifactId>seed-testing</artifactId>
+            <version>${seed.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.el</artifactId>
+            <version>3.0.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
