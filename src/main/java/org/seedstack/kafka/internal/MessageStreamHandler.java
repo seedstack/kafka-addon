@@ -30,7 +30,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class MessageStreamHandler implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageStreamHandler.class);
     public static final String STOPPING_TO_POLL = "Stopping to poll messages for Kafka kStreams {}";
-    public static final String MESSAGE_STREAM_NAME = "messageStreamName";
     public static final String STARTING_TO_POLL_MESSAGES_FOR_MESSAGE_CONSUMER_LISTENER = "Starting to poll messages for MessageStream listener {}";
     private Thread thread;
     private KafkaConfig.StreamConfig streamConfig;
@@ -67,7 +66,7 @@ public class MessageStreamHandler implements Runnable {
             if (messageStream != null) {
                 messageStream.onException(e);
             }
-            throw SeedException.wrap(e, KafkaErrorCode.UNABLE_TO_CREATE_MESSAGE_STREAM_HANDLER).put(MESSAGE_STREAM_NAME, getMessageStreamName());
+            throw SeedException.wrap(e, KafkaErrorCode.UNABLE_TO_CREATE_MESSAGE_STREAM_HANDLER).put("messageStream", getMessageStreamName());
         }
     }
 

@@ -31,7 +31,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class MessageConsumerPoller implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageConsumerPoller.class);
     public static final String STOPPING_TO_POLL = "Stopping to poll messages for Kafka consumer {}";
-    public static final String MESSAGE_CONSUMER_NAME = "messageConsumerName";
     public static final String STARTING_TO_POLL_MESSAGES_FOR_MESSAGE_CONSUMER_LISTENER = "Starting to poll messages for MessageConsumer listener {}";
     private final AtomicBoolean active = new AtomicBoolean(false);
     private long receiveTimeout = 0;
@@ -76,9 +75,10 @@ public class MessageConsumerPoller implements Runnable {
             if (consumer != null) {
                 consumer.close();
             }
-            throw SeedException.wrap(e, KafkaErrorCode.UNABLE_TO_CREATE_MESSAGE_CONSUMER_POLLER).put(MESSAGE_CONSUMER_NAME, messageConsumerName);
+            throw SeedException.wrap(e, KafkaErrorCode.UNABLE_TO_CREATE_MESSAGE_CONSUMER_POLLER).put("messageConsumerName", messageConsumerName);
+        } finally {
+            consumerLock.writeLock().unlock();
         }
-        consumerLock.writeLock().unlock();
     }
 
 

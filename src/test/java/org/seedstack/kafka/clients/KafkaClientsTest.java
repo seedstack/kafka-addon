@@ -11,7 +11,9 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.fest.assertions.Assertions;
 import org.junit.Test;
+import org.seedstack.seed.Logging;
 import org.seedstack.seed.it.AbstractSeedIT;
+import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -29,6 +31,9 @@ public class KafkaClientsTest extends AbstractSeedIT {
     @Inject
     @Named("kafkaProducerTest")
     Producer<Integer, String> producer;
+
+    @Logging
+    private Logger logger;
 
     @Test
     public void consumerTest() throws InterruptedException, IOException {

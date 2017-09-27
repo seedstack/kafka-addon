@@ -7,21 +7,11 @@ jdk: oraclejdk8
 cache:
   directories:
     - "$HOME/.m2/repository"
-env:
-  global:
-  - ZOOKEEPER_PEERS=localhost:2181
-  - KAFKA_PEERS=localhost:9092
-
+services:
+  - docker
 before_install:
-- wget http://www.us.apache.org/dist/kafka/0.11.0.0/kafka_2.11-0.11.0.0.tgz -O kafka.tgz
-- mkdir -p kafka && tar xzf kafka.tgz -C kafka --strip-components 1
-- nohup bash -c "cd kafka && bin/zookeeper-server-start.sh config/zookeeper.properties &"
-- nohup bash -c "cd kafka && bin/kafka-server-start.sh config/server.properties &"
-- sleep 5
-- kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic testClients --zookeeper localhost:2181
-- kafka/bin/kafka-topics.sh --create --partitions 4 --replication-factor 1 --topic testStreams --zookeeper localhost:2181
-
-
+  - wget https://raw.githubusercontent.com/Red1L/kafka-docker/master/docker-compose.yml
+  - docker-compose up -d
 install:
   - echo "<settings><servers><server><id>bintray</id><username>\${env.BINTRAY_USER}</username><password>\${env.BINTRAY_KEY}</password></server></servers></settings>" > ~/.m2/settings.xml
   - if [[ $TRAVIS_PULL_REQUEST = false ]] && [[ $TRAVIS_BRANCH = master ]] || [[ $TRAVIS_TAG = v* ]]; then GOAL=deploy; else GOAL=install; fi
