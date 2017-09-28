@@ -23,7 +23,7 @@
 
     <properties>
         <seed.version>3.2.0</seed.version>
-        <compatibility.version>3.0.0</compatibility.version>
+        <compatibility.skip>true</compatibility.skip>
         <bintray.package>kafka-addon</bintray.package>
         <kafka-clients.version>0.11.0.0</kafka-clients.version>
         <kafka-streams.version>0.11.0.0</kafka-streams.version>

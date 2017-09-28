@@ -10,7 +10,6 @@ cache:
 services:
   - docker
 before_install:
-  - wget https://raw.githubusercontent.com/Red1L/kafka-docker/master/docker-compose.yml
   - docker-compose up -d
 install:
   - echo "<settings><servers><server><id>bintray</id><username>\${env.BINTRAY_USER}</username><password>\${env.BINTRAY_KEY}</password></server></servers></settings>" > ~/.m2/settings.xml
