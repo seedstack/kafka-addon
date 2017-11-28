@@ -75,7 +75,7 @@ public class MessageConsumerPoller implements Runnable {
             if (consumer != null) {
                 consumer.close();
             }
-            throw SeedException.wrap(e, KafkaErrorCode.UNABLE_TO_CREATE_MESSAGE_CONSUMER_POLLER).put("messageConsumerName", messageConsumerName);
+            throw SeedException.wrap(e, KafkaErrorCode.UNABLE_TO_CREATE_MESSAGE_CONSUMER_POLLER).put("messageConsumer", messageConsumerName);
         } finally {
             consumerLock.writeLock().unlock();
         }
