@@ -5,18 +5,29 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.kafka.spi;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * The Consumer annotation, match KafkaConsumers components (MessageConsumer, ConsumerRebalanceListener) to a named configuration
+ * The Consumer annotation, match KafkaConsumers components (MessageConsumer, ConsumerRebalanceListener) to a named
+ * configuration
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 @Inherited
 public @interface Consumer {
-
+    /**
+     * Returns the name of the configured consumer.
+     *
+     * @return the name of the configured consumer.
+     */
     String value();
 }

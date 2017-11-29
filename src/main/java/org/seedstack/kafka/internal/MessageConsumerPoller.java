@@ -5,11 +5,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.kafka.internal;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.regex.Pattern;
+import javax.inject.Inject;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -20,30 +27,23 @@ import org.seedstack.seed.SeedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.regex.Pattern;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-
-
-public class MessageConsumerPoller implements Runnable {
+public class MessageConsumerPoller<K, V> implements Runnable {
+    private static final String STOPPING_TO_POLL = "Stopping to poll messages for Kafka consumer {}";
+    private static final String STARTING_TO_POLL_MESSAGES_FOR_MESSAGE_CONSUMER_LISTENER = "Starting to poll messages " +
+            "for MessageConsumer listener {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageConsumerPoller.class);
-    public static final String STOPPING_TO_POLL = "Stopping to poll messages for Kafka consumer {}";
-    public static final String STARTING_TO_POLL_MESSAGES_FOR_MESSAGE_CONSUMER_LISTENER = "Starting to poll messages for MessageConsumer listener {}";
     private final AtomicBoolean active = new AtomicBoolean(false);
-    private long receiveTimeout = 0;
+    private final MessageConsumer<K, V> messageConsumer;
+    private final KafkaConfig.ConsumerConfig consumerConfig;
+    private final String messageConsumerName;
     private Thread thread;
-    private MessageConsumer messageConsumer;
-    private KafkaConfig.ConsumerConfig consumerConfig;
-    private Consumer consumer;
+    private Consumer<K, V> consumer;
     private ReentrantReadWriteLock consumerLock = new ReentrantReadWriteLock();
-    private String messageConsumerName;
     @Inject
     private Injector injector;
 
-    public MessageConsumerPoller(KafkaConfig.ConsumerConfig consumerConfig, MessageConsumer messageConsumer, String messageConsumerName) {
+    MessageConsumerPoller(KafkaConfig.ConsumerConfig consumerConfig, MessageConsumer<K, V> messageConsumer,
+            String messageConsumerName) {
         this.messageConsumer = messageConsumer;
         this.consumerConfig = consumerConfig;
         this.messageConsumerName = messageConsumerName;
@@ -54,7 +54,7 @@ public class MessageConsumerPoller implements Runnable {
         LOGGER.debug(STARTING_TO_POLL_MESSAGES_FOR_MESSAGE_CONSUMER_LISTENER, messageConsumerName);
         consumerLock.writeLock().lock();
         try {
-            consumer = new KafkaConsumer(consumerConfig.getProperties());
+            consumer = new KafkaConsumer<>(consumerConfig.getProperties());
             if (consumerConfig.getTopicPattern() != null) {
                 consumer.subscribe(Pattern.compile(consumerConfig.getTopicPattern()), getConsumerBalancerListener());
             } else {
@@ -62,9 +62,10 @@ public class MessageConsumerPoller implements Runnable {
             }
             while (active.get()) {
                 try {
-                    ConsumerRecords<?, ?> records = consumer.poll(receiveTimeout);
+                    long receiveTimeout = 0;
+                    ConsumerRecords<K, V> records = consumer.poll(receiveTimeout);
                     if (!records.isEmpty()) {
-                        records.forEach(consumerRecord -> messageConsumer.onMessage(consumerRecord));
+                        records.forEach(messageConsumer::onMessage);
                         consumer.commitAsync();
                     }
                 } catch (Exception e) {
@@ -75,14 +76,14 @@ public class MessageConsumerPoller implements Runnable {
             if (consumer != null) {
                 consumer.close();
             }
-            throw SeedException.wrap(e, KafkaErrorCode.UNABLE_TO_CREATE_MESSAGE_CONSUMER_POLLER).put("messageConsumer", messageConsumerName);
+            throw SeedException.wrap(e, KafkaErrorCode.UNABLE_TO_CREATE_MESSAGE_CONSUMER_POLLER)
+                    .put("messageConsumer", messageConsumerName);
         } finally {
             consumerLock.writeLock().unlock();
         }
     }
 
-
-    public synchronized void start() {
+    synchronized void start() {
         if (!active.getAndSet(true)) {
             checkNotNull(this.messageConsumer);
             checkNotNull(this.consumerConfig);
@@ -90,7 +91,7 @@ public class MessageConsumerPoller implements Runnable {
         }
     }
 
-    public synchronized void stop() {
+    synchronized void stop() {
         LOGGER.debug(STOPPING_TO_POLL, messageConsumerName);
         if (active.getAndSet(false)) {
             Consumer consumer = getConsumer();
@@ -101,7 +102,7 @@ public class MessageConsumerPoller implements Runnable {
         }
     }
 
-    public Consumer getConsumer() {
+    private Consumer getConsumer() {
         consumerLock.readLock().lock();
         try {
             return consumer;
@@ -116,7 +117,7 @@ public class MessageConsumerPoller implements Runnable {
         thread.start();
     }
 
-    public ConsumerRebalanceListener getConsumerBalancerListener() {
+    private ConsumerRebalanceListener getConsumerBalancerListener() {
         return injector.getInstance(Key.get(ConsumerRebalanceListener.class, Names.named(messageConsumerName)));
     }
 }

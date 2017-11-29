@@ -5,8 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.seedstack.kafka.internal;
 
+package org.seedstack.kafka.internal;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Named;
@@ -15,6 +15,10 @@ import io.nuun.kernel.api.plugin.InitState;
 import io.nuun.kernel.api.plugin.context.Context;
 import io.nuun.kernel.api.plugin.context.InitContext;
 import io.nuun.kernel.api.plugin.request.ClasspathScanRequest;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import org.kametic.specifications.Specification;
 import org.seedstack.kafka.KafkaConfig;
 import org.seedstack.kafka.spi.MessageStream;
@@ -25,24 +29,16 @@ import org.seedstack.shed.reflect.Classes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-
 public class StreamsPlugin extends AbstractSeedPlugin {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StreamsPlugin.class);
-
-    private final Specification<Class<?>> messageStreamSpec = and(classImplements(MessageStream.class), classAnnotatedWith(Stream.class));
-
+    private static final Optional<Class<Object>> KAFKA_OPTIONAL = Classes.optional(
+            "org.apache.kafka.streams.KafkaStreams");
+    private final Specification<Class<?>> messageStreamSpec = and(classImplements(MessageStream.class),
+            classAnnotatedWith(Stream.class));
     private final Collection<MessageStreamHandler> handlers = new ArrayList<>();
-
     private final Collection<MessageStream> messageStreams = new ArrayList<>();
-
     private final Collection<Class> messageStreamClasses = new ArrayList<>();
-
-    private static final Optional<Class<Object>> KAFKA_OPTIONAL = Classes.optional("org.apache.kafka.streams.KafkaStreams");
 
     @Override
     public String name() {
@@ -53,8 +49,10 @@ public class StreamsPlugin extends AbstractSeedPlugin {
     public InitState initialize(InitContext initContext) {
         if (KAFKA_OPTIONAL.isPresent()) {
             KafkaConfig kafkaStreamsConfig = getConfiguration(KafkaConfig.class);
-            Collection<Class<?>> messageStreamClasses = initContext.scannedTypesBySpecification().get(messageStreamSpec);
-            messageStreamClasses.forEach(messageStreamClass -> initStream(messageStreamClass, kafkaStreamsConfig.getStreams()));
+            Collection<Class<?>> messageStreamClasses = initContext.scannedTypesBySpecification()
+                    .get(messageStreamSpec);
+            messageStreamClasses.forEach(messageStreamClass -> initStream(messageStreamClass,
+                    kafkaStreamsConfig.getStreams()));
         } else {
             LOGGER.debug("kafka-streams is not present in the classpath, kafka-streams support disabled");
         }
@@ -68,7 +66,8 @@ public class StreamsPlugin extends AbstractSeedPlugin {
             messageStreamClasses.add(messageStreamClass);
             handlers.add(new MessageStreamHandler(streamConfig, messageStreamClass));
         } else {
-            throw SeedException.createNew(KafkaErrorCode.CONFIG_NOT_FOUND_FOR_MESSAGE_STREAM).put("messageStream", messageStreamName);
+            throw SeedException.createNew(KafkaErrorCode.CONFIG_NOT_FOUND_FOR_MESSAGE_STREAM)
+                    .put("messageStream", messageStreamName);
         }
 
     }
@@ -76,7 +75,6 @@ public class StreamsPlugin extends AbstractSeedPlugin {
     private Named getNamed(Class<?> messageStreamClass) {
         return Names.named(messageStreamClass.getAnnotation(Stream.class).value());
     }
-
 
     @Override
     public Collection<ClasspathScanRequest> classpathScanRequests() {

@@ -5,41 +5,39 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.kafka.internal;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.seedstack.kafka.KafkaConfig;
-import org.seedstack.kafka.spi.MessageConsumer;
-
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.seedstack.kafka.KafkaConfig;
+import org.seedstack.kafka.spi.MessageConsumer;
 
-public class MessageConsumerAdapter implements MessageConsumer {
-
-
-    private ThreadPoolExecutor pool;
-    private KafkaConfig.PoolConfig poolConfig;
-    Key<MessageConsumer> consumerKey;
+class MessageConsumerAdapter<K, V> implements MessageConsumer<K, V> {
+    private final Key<MessageConsumer<K, V>> consumerKey;
+    private final ThreadPoolExecutor pool;
     @Inject
     private Injector injector;
 
-    public MessageConsumerAdapter(Key consumerKey, KafkaConfig.PoolConfig poolConfig) {
-        this.poolConfig = poolConfig;
+    MessageConsumerAdapter(Key<MessageConsumer<K, V>> consumerKey, KafkaConfig.PoolConfig poolConfig) {
         this.consumerKey = consumerKey;
         if (poolConfig.isEnabled()) {
-            pool = getThreadPoolExecutor(poolConfig);
+            this.pool = getThreadPoolExecutor(poolConfig);
+        } else {
+            this.pool = null;
         }
     }
 
     @Override
-    public void onMessage(ConsumerRecord value) {
-        MessageConsumer messageConsumer = injector.getInstance(this.consumerKey);
-        if (poolConfig.isEnabled()) {
+    public void onMessage(ConsumerRecord<K, V> value) {
+        MessageConsumer<K, V> messageConsumer = injector.getInstance(this.consumerKey);
+        if (pool != null) {
             pool.submit(() -> messageConsumer.onMessage(value));
         } else {
             messageConsumer.onMessage(value);
@@ -47,11 +45,11 @@ public class MessageConsumerAdapter implements MessageConsumer {
     }
 
     @Override
-    public void onException(Throwable cause) {
-        injector.getInstance(this.consumerKey).onException(cause);
+    public void onException(Throwable throwable) {
+        injector.getInstance(this.consumerKey).onException(throwable);
     }
 
-    ThreadPoolExecutor getThreadPoolExecutor(KafkaConfig.PoolConfig poolConfig) {
+    private ThreadPoolExecutor getThreadPoolExecutor(KafkaConfig.PoolConfig poolConfig) {
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
                 poolConfig.getCoreSize(),
                 poolConfig.getMaxSize(),

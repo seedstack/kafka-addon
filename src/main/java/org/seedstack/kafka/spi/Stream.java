@@ -5,9 +5,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.kafka.spi;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * The Stream annotation, match KafkaStreams components (MessageStream) to a named configuration
@@ -17,6 +23,10 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE})
 @Inherited
 public @interface Stream {
-
+    /**
+     * Returns the name of the configured stream.
+     *
+     * @return the name of the configured stream.
+     */
     String value();
 }

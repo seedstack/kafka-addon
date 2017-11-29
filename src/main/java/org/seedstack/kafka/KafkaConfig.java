@@ -5,45 +5,92 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.kafka;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import org.seedstack.coffig.Config;
 import org.seedstack.coffig.SingleValue;
 
-import java.util.*;
-
 @Config("kafka")
 public class KafkaConfig {
-
     private Map<String, StreamConfig> streams = new HashMap<>();
-
     private Map<String, ConsumerConfig> consumers = new HashMap<>();
-
     private Map<String, ProducerConfig> producers = new HashMap<>();
 
-    public static class ConsumerConfig {
+    public Map<String, StreamConfig> getStreams() {
+        return Collections.unmodifiableMap(streams);
+    }
 
+    public KafkaConfig addStream(String name, StreamConfig streamConfig) {
+        this.streams.put(name, streamConfig);
+        return this;
+    }
+
+    public Map<String, ConsumerConfig> getConsumers() {
+        return Collections.unmodifiableMap(consumers);
+    }
+
+    public KafkaConfig addConsumer(String name, ConsumerConfig consumerConfig) {
+        this.consumers.put(name, consumerConfig);
+        return this;
+    }
+
+    public Map<String, ProducerConfig> getProducers() {
+        return Collections.unmodifiableMap(producers);
+    }
+
+    public KafkaConfig addProducer(String name, ProducerConfig producerConfig) {
+        this.producers.put(name, producerConfig);
+        return this;
+    }
+
+    public static class ConsumerConfig {
         private List<String> topics = new ArrayList<>();
         private Properties properties = new Properties();
         private PoolConfig poolConfig = new PoolConfig();
         private String topicPattern;
 
         public List<String> getTopics() {
-            return topics;
+            return Collections.unmodifiableList(topics);
         }
 
-        public String getTopicPattern() {
-            return topicPattern;
+        public ConsumerConfig addTopic(String topic) {
+            topics.add(topic);
+            return this;
         }
 
         public Properties getProperties() {
             return properties;
         }
 
+        public ConsumerConfig setProperties(Properties properties) {
+            this.properties = properties;
+            return this;
+        }
+
         public PoolConfig getPoolConfig() {
             return poolConfig;
         }
 
+        public ConsumerConfig setPoolConfig(PoolConfig poolConfig) {
+            this.poolConfig = poolConfig;
+            return this;
+        }
+
+        public String getTopicPattern() {
+            return topicPattern;
+        }
+
+        public ConsumerConfig setTopicPattern(String topicPattern) {
+            this.topicPattern = topicPattern;
+            return this;
+        }
     }
 
     public static class PoolConfig {
@@ -128,23 +175,36 @@ public class KafkaConfig {
     }
 
     public static class StreamConfig {
-        private String topicPattern;
-        private Properties properties = new Properties();
         private List<String> topics = new ArrayList<>();
+        private Properties properties = new Properties();
+        private String topicPattern;
 
         public List<String> getTopics() {
-            return topics;
+            return Collections.unmodifiableList(topics);
         }
 
-        public String getTopicPattern() {
-            return topicPattern;
+        public StreamConfig addTopic(String topic) {
+            topics.add(topic);
+            return this;
         }
 
         public Properties getProperties() {
             return properties;
         }
 
+        public StreamConfig setProperties(Properties properties) {
+            this.properties = properties;
+            return this;
+        }
 
+        public String getTopicPattern() {
+            return topicPattern;
+        }
+
+        public StreamConfig setTopicPattern(String topicPattern) {
+            this.topicPattern = topicPattern;
+            return this;
+        }
     }
 
     public static class ProducerConfig {
@@ -153,18 +213,10 @@ public class KafkaConfig {
         public Properties getProperties() {
             return properties;
         }
-    }
 
-
-    public Map<String, StreamConfig> getStreams() {
-        return Collections.unmodifiableMap(streams);
-    }
-
-    public Map<String, ConsumerConfig> getConsumers() {
-        return Collections.unmodifiableMap(consumers);
-    }
-
-    public Map<String, ProducerConfig> getProducers() {
-        return Collections.unmodifiableMap(producers);
+        public ProducerConfig setProperties(Properties properties) {
+            this.properties = properties;
+            return this;
+        }
     }
 }

@@ -5,11 +5,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 package org.seedstack.kafka.internal;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
+import java.util.regex.Pattern;
+import javax.inject.Inject;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KStreamBuilder;
@@ -20,27 +25,20 @@ import org.seedstack.seed.SeedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-
-import java.util.regex.Pattern;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-
-
-public class MessageStreamHandler implements Runnable {
+class MessageStreamHandler<K, V> implements Runnable {
+    private static final String STOPPING_TO_POLL = "Stopping to poll messages for Kafka kStreams {}";
+    private static final String STARTING_TO_POLL_MESSAGES_FOR_MESSAGE_CONSUMER_LISTENER = "Starting to poll messages " +
+            "for MessageStream listener {}";
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageStreamHandler.class);
-    public static final String STOPPING_TO_POLL = "Stopping to poll messages for Kafka kStreams {}";
-    public static final String STARTING_TO_POLL_MESSAGES_FOR_MESSAGE_CONSUMER_LISTENER = "Starting to poll messages for MessageStream listener {}";
+    private final KafkaConfig.StreamConfig streamConfig;
+    private final Class<?> messageStreamClass;
     private Thread thread;
-    private KafkaConfig.StreamConfig streamConfig;
     private KafkaStreams kStreams;
-    private Class<?> messageStreamClass;
-    private MessageStream messageStream;
+    private MessageStream<K, V> messageStream;
     @Inject
     private Injector injector;
 
-
-    public MessageStreamHandler(KafkaConfig.StreamConfig streamConfig, Class<?> messageStreamClass) {
+    MessageStreamHandler(KafkaConfig.StreamConfig streamConfig, Class<?> messageStreamClass) {
         this.streamConfig = streamConfig;
         this.messageStreamClass = messageStreamClass;
     }
@@ -50,7 +48,7 @@ public class MessageStreamHandler implements Runnable {
         LOGGER.debug(STARTING_TO_POLL_MESSAGES_FOR_MESSAGE_CONSUMER_LISTENER, getMessageStreamName());
         try {
             KStreamBuilder builder = new KStreamBuilder();
-            KStream kStream;
+            KStream<K, V> kStream;
             if (streamConfig.getTopicPattern() != null) {
                 kStream = builder.stream(Pattern.compile(streamConfig.getTopicPattern()));
             } else {
@@ -66,19 +64,19 @@ public class MessageStreamHandler implements Runnable {
             if (messageStream != null) {
                 messageStream.onException(e);
             }
-            throw SeedException.wrap(e, KafkaErrorCode.UNABLE_TO_CREATE_MESSAGE_STREAM_HANDLER).put("messageStream", getMessageStreamName());
+            throw SeedException.wrap(e, KafkaErrorCode.UNABLE_TO_CREATE_MESSAGE_STREAM_HANDLER)
+                    .put("messageStream", getMessageStreamName());
         }
     }
 
-
-    public synchronized void start() {
+    synchronized void start() {
         messageStream = getMessageStream();
         checkNotNull(this.messageStream);
         checkNotNull(this.streamConfig);
         startThread();
     }
 
-    public synchronized void stop() {
+    synchronized void stop() {
         LOGGER.debug(STOPPING_TO_POLL, getMessageStreamName());
         if (kStreams != null) {
             kStreams.close();
@@ -86,14 +84,14 @@ public class MessageStreamHandler implements Runnable {
         thread.interrupt();
     }
 
-
     private void startThread() {
         thread = new Thread(this);
         thread.setName("kafka-stream-handler-" + thread.getId());
         thread.start();
     }
 
-    public MessageStream getMessageStream() {
+    @SuppressWarnings("unchecked")
+    private MessageStream<K, V> getMessageStream() {
         return injector.getInstance(Key.get(MessageStream.class, Names.named(getMessageStreamName())));
     }
 

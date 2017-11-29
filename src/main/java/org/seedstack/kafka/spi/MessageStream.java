@@ -5,18 +5,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.seedstack.kafka.spi;
 
+package org.seedstack.kafka.spi;
 
 import org.apache.kafka.streams.kstream.KStream;
 
 /**
- * A <CODE>MessageStream</CODE> handle Kafka streams
+ * A {@link MessageStream} is used to handle Kafka streams.
  */
 public interface MessageStream<K, V> {
 
     void onStream(KStream<K, V> stream);
 
-    void onException(Throwable cause);
+    void onException(Throwable throwable);
 
 }
