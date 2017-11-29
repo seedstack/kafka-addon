@@ -23,7 +23,7 @@
 
     <properties>
         <seed.version>3.4.0</seed.version>
-        <kafka.version>0.11.0.0</kafka.version>
+        <kafka.version>1.0.0</kafka.version>
 
         <compatibility.skip>true</compatibility.skip>
 
@@ -67,6 +67,8 @@
                             <licenseMerge>LGPL 3.0|GNU Lesser Public License</licenseMerge>
                             <licenseMerge>MIT|MIT License</licenseMerge>
                             <licenseMerge>MIT|The MIT License</licenseMerge>
+
+                            <licenseMerge>IGNORED_LICENSE|GNU General Public License, version 2</licenseMerge>
                         </licenseMerges>
                     </configuration>
                 </plugin>
@@ -144,6 +146,12 @@
             <artifactId>kafka-streams</artifactId>
             <version>${kafka.version}</version>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
