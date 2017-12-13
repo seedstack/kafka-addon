@@ -35,6 +35,6 @@ public class KafkaClientsIT extends AbstractSeedIT {
         producer.send(new ProducerRecord<>(TOPIC, 1, "test"));
         producer.send(new ProducerRecord<>(TOPIC, 2, "test2"));
         producer.close();
-        Assertions.assertThat(count.await(10, TimeUnit.SECONDS)).isTrue();
+        Assertions.assertThat(count.await(20, TimeUnit.SECONDS)).isTrue();
     }
 }

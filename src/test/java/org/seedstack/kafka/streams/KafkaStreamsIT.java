@@ -31,7 +31,7 @@ public class KafkaStreamsIT extends AbstractSeedIT {
         try {
             producer.send(new ProducerRecord<>(TOPIC, 3, "test3"));
             producer.send(new ProducerRecord<>(TOPIC, 4, "test4"));
-            Assertions.assertThat(count.await(10, TimeUnit.SECONDS)).isTrue();
+            Assertions.assertThat(count.await(20, TimeUnit.SECONDS)).isTrue();
             producer.close();
         } catch (Exception e) {
             Fail.fail(e.getMessage(), e);

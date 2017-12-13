@@ -22,4 +22,5 @@ services:
       - zookeeper:zk
     environment:
       KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_CREATE_TOPICS: "testStreams:1:1,testClients:1:1"
       KAFKA_ZOOKEEPER_CONNECT: "zk:2181"
