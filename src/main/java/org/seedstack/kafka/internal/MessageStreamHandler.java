@@ -5,25 +5,25 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-
 package org.seedstack.kafka.internal;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
-import java.util.regex.Pattern;
-import javax.inject.Inject;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KStreamBuilder;
 import org.seedstack.kafka.KafkaConfig;
 import org.seedstack.kafka.spi.MessageStream;
 import org.seedstack.kafka.spi.Stream;
 import org.seedstack.seed.SeedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import java.util.regex.Pattern;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class MessageStreamHandler<K, V> implements Runnable {
     private static final String STOPPING_TO_POLL = "Stopping to poll messages for Kafka kStreams {}";
@@ -47,17 +47,17 @@ class MessageStreamHandler<K, V> implements Runnable {
     public void run() {
         LOGGER.debug(STARTING_TO_POLL_MESSAGES_FOR_MESSAGE_CONSUMER_LISTENER, getMessageStreamName());
         try {
-            KStreamBuilder builder = new KStreamBuilder();
+            StreamsBuilder builder = new StreamsBuilder();
             KStream<K, V> kStream;
             if (streamConfig.getTopicPattern() != null) {
                 kStream = builder.stream(Pattern.compile(streamConfig.getTopicPattern()));
             } else {
-                kStream = builder.stream(streamConfig.getTopics().toArray(new String[streamConfig.getTopics().size()]));
+                kStream = builder.stream(streamConfig.getTopics());
             }
             messageStream.onStream(kStream);
-            kStreams = new KafkaStreams(builder, streamConfig.getProperties());
+            kStreams = new KafkaStreams(builder.build(), streamConfig.getProperties());
             kStreams.start();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             if (kStreams != null) {
                 kStreams.close();
             }

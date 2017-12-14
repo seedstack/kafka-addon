@@ -5,7 +5,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-
 package org.seedstack.kafka.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -13,16 +12,21 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
+
+import java.text.MessageFormat;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
+
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.seedstack.kafka.KafkaConfig;
 import org.seedstack.kafka.spi.MessageConsumer;
+import org.seedstack.seed.Logging;
 import org.seedstack.seed.SeedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +45,11 @@ public class MessageConsumerPoller<K, V> implements Runnable {
     private ReentrantReadWriteLock consumerLock = new ReentrantReadWriteLock();
     @Inject
     private Injector injector;
+    @Logging
+    private Logger logger;
 
     MessageConsumerPoller(KafkaConfig.ConsumerConfig consumerConfig, MessageConsumer<K, V> messageConsumer,
-            String messageConsumerName) {
+                          String messageConsumerName) {
         this.messageConsumer = messageConsumer;
         this.consumerConfig = consumerConfig;
         this.messageConsumerName = messageConsumerName;
@@ -72,7 +78,7 @@ public class MessageConsumerPoller<K, V> implements Runnable {
                     messageConsumer.onException(e);
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             if (consumer != null) {
                 consumer.close();
             }
@@ -94,20 +100,17 @@ public class MessageConsumerPoller<K, V> implements Runnable {
     synchronized void stop() {
         LOGGER.debug(STOPPING_TO_POLL, messageConsumerName);
         if (active.getAndSet(false)) {
-            Consumer consumer = getConsumer();
-            if (consumer != null) {
-                getConsumer().close();
+            try {
+                consumerLock.readLock().tryLock(10, TimeUnit.SECONDS);
+                if (consumer != null) {
+                    consumer.close();
+                }
+                consumerLock.readLock().unlock();
+            } catch (Exception e) {
+                logger.warn(MessageFormat.format("Failed to close Kafka consumer [{0}], the polling thread has been interrupted nonetheless", messageConsumerName));
+            } finally {
+                thread.interrupt();
             }
-            thread.interrupt();
-        }
-    }
-
-    private Consumer getConsumer() {
-        consumerLock.readLock().lock();
-        try {
-            return consumer;
-        } finally {
-            consumerLock.readLock().unlock();
         }
     }
 
