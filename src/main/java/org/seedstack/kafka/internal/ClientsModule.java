@@ -88,7 +88,7 @@ class ClientsModule extends AbstractModule {
                 bind((TypeLiteral<Producer>) TypeLiteral.get(Types.newParameterizedType(Producer.class,
                         lGeneric[0],
                         rGeneric[0]))).annotatedWith(Names.named(producerName))
-                        .toProvider(() -> new KafkaProducer(producerConfig.getProperties()));
+                        .toInstance(new KafkaProducer(producerConfig.getProperties()));
             } else {
                 throw SeedException.createNew(KafkaErrorCode.KAFKA_PRODUCER_SERIALIZER_NOT_FOUND_IN_CLASSPATH)
                         .put("producer", producerName);
