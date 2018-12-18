@@ -15,7 +15,7 @@ kafka:
       topics: [testStreams]
       properties:
         application.id: kafkaStreamTest
-        bootstrap.servers: localhost:9092
+        bootstrap.servers: ${env.LOCAL_KAFKA}
         default.key.serde: org.apache.kafka.common.serialization.Serdes$IntegerSerde
         default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
   consumers:
@@ -23,7 +23,7 @@ kafka:
       topics: [testClients]
       properties:
         group.id: kafkaConsumerTest
-        bootstrap.servers: localhost:9092
+        bootstrap.servers: ${env.LOCAL_KAFKA}
         key.deserializer: org.apache.kafka.common.serialization.IntegerDeserializer
         value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
         auto.offset.reset: earliest
@@ -31,7 +31,7 @@ kafka:
     kafkaProducerTest:
       properties:
         client.id: kafkaProducerTest
-        bootstrap.servers: localhost:9092
+        bootstrap.servers: ${env.LOCAL_KAFKA}
         key.serializer: org.apache.kafka.common.serialization.IntegerSerializer
         value.serializer: org.apache.kafka.common.serialization.StringSerializer
 proxy:
