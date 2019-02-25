@@ -1,38 +1,36 @@
 #
-# Copyright (c) 2013-2016, The SeedStack authors <http://seedstack.org>
+# Copyright © 2013-2019, The SeedStack authors <http://seedstack.org>
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 
-application:
-  basePackages: [ org.apache.kafka.common.serialization ]
-
 kafka:
   streams:
-    kafkaStreamTest:
+    streamTest:
       topics: [testStreams]
       properties:
         application.id: kafkaStreamTest
-        bootstrap.servers: ${env.LOCAL_KAFKA}
+        bootstrap.servers: localhost:9092
         default.key.serde: org.apache.kafka.common.serialization.Serdes$IntegerSerde
         default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
   consumers:
-    kafkaConsumerTest:
-      topics: [testClients]
+    consumerTest:
       properties:
-        group.id: kafkaConsumerTest
-        bootstrap.servers: ${env.LOCAL_KAFKA}
+        group.id: consumerTest
+        bootstrap.servers: localhost:9092
         key.deserializer: org.apache.kafka.common.serialization.IntegerDeserializer
         value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
         auto.offset.reset: earliest
   producers:
-    kafkaProducerTest:
+    producerTest:
       properties:
-        client.id: kafkaProducerTest
-        bootstrap.servers: ${env.LOCAL_KAFKA}
+        transactional.id: toto
+        client.id: producerTest
+        bootstrap.servers: localhost:9092
         key.serializer: org.apache.kafka.common.serialization.IntegerSerializer
         value.serializer: org.apache.kafka.common.serialization.StringSerializer
+
 proxy:
   mode: DISABLED
