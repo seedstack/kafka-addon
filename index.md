@@ -1,7 +1,7 @@
 ---
 title: "Kafka"
 addon: "Kafka"
-repo: "https://github.com/seedstack/jpa-addon"
+repo: "https://github.com/seedstack/kafka-addon"
 author: Redouane LOULOU
 description: "Integration with Apache Kafka, the distributed streaming platform."
 tags:
@@ -10,6 +10,7 @@ zones:
     - Addons
 noMenu: true    
 ---
+
 Apache Kafka is a scalable distributed streaming platform. It's best suited for handling real-time data streams. The 
 Kafka add-on provides an integration of both streams and pub/sub clients, using the Kafka API.
 
@@ -19,10 +20,11 @@ To add the Kafka add-on to your project, add the following dependency:
 
 {{< dependency g="org.seedstack.addons.kafka" a="kafka" >}}
 
-You must also add the Apache KAFKA implementation for streams or clients: 
+You must also add the Apache KAFKA implementation for basic clients at least, and optionally for streams: 
 
-{{< dependency g="org.apache.kafka" a="kafka-streams" v="0.11.0.0" >}}
-{{< dependency g="org.apache.kafka" a="kafka-clients" v="0.11.0.0" >}}
+{{< dependency g="org.apache.kafka" a="kafka-streams">}}
+
+{{< dependency g="org.apache.kafka" a="kafka-clients">}}
 
 ## Configuration
 
@@ -31,65 +33,35 @@ Configuration is done by declaring one or more MQTT clients:
 {{% config p="kafka" %}}
 ```yaml
 kafka:
-  # Configured streams with the name of the stream as key
+  # Configured Kafka streams with the name of the stream as key
   streams:
     stream1:
-      # List of listening topics
-      topics: (List<Class<?>>)
-      # Listening topic pattern (topics parameter is ignored when set)
-      topicPattern: (String)
-      # Needed kafka-streams properties
+      # Kafka properties for configuring the stream
       properties:
-        propertie1: value1
+        property1: value1
   consumers:
-    # Configured kafka-client consumer with the name of the consumer as key
+    # Configured Kafka consumer with the name of the consumer as key
     consumer1:
-      # List of listening topics
-      topics: (List<Class<?>>)
-      # Listening topic pattern (topics parameter is ignored when set)
-      topicPattern: (String)
-      # Needed kafka-client properties
+      # Kafka properties for configuring the consumer
       properties:
-        propertie1: value1
+        property1: value1
   producers:
-    # Configured client producer with the name of the producer as key
+    # True if the producer is to be used with transactions, false otherwise
+    transactional: (boolean)
+    # Configured Kafka producer with the name of the producer as key
     producer1:
-      # Needed kafka-client producer properties
+      # Kafka properties for configuring the producer
       properties:
-        propertie1: value1
+        property1: value1
 
 ```
 {{% /config %}}
     
-## Consuming messages
 
-To receive Kafka messages, create a consumer class which implements the interface {{< java "org.seedstack.kafka.spi.MessageConsumer" >}}   
-interface and is annotated with {{< java "org.seedstack.kafka.spi.Consumer" "@" >}}:
+## Publishing 
 
-```java
-@Consumer("consumer1")
-public class MyMessageConsumer implements MessageConsumer<Integer, String> {
-    @Logging
-    private Logger logger;
-
-    @Override
-    public void onMessage(ConsumerRecord<Integer, String> consumerRecord) {
-        logger.debug("Key [{}], Value [{}]", consumerRecord.key(), consumerRecord.value());
-    }
-
-    @Override
-    public void onException(Throwable cause) {
-        logger.error(cause.getMessage(), cause);
-    }
-}
-```
-
-The {{< java "org.seedstack.kafka.spi.Consumer" "@" >}} annotation takes a value matching to a configured consumer name.
-
-## Publishing messages
-
-In any class, just inject a Kafka Producer  {{< java "org.apache.kafka.clients.producer.Producer" >}} interface
-qualified with a matching configured producer name:
+To publish messages, inject the {{< java "org.apache.kafka.clients.producer.Producer" >}} interface qualified with a 
+configured producer name:
 
 ```java
 public class SomeClass {
@@ -99,8 +71,9 @@ public class SomeClass {
 }
 ```
 
-To publish a message, use the `send()` method:
- 
+Use the Kafka API to send messages. If the produced is configured as transactional, you must enclose your calls to the 
+`send()` method with the programmatic Kafka transaction methods:
+
 ```java
 public class SomeClass {
     @Inject
@@ -109,32 +82,83 @@ public class SomeClass {
     
     public void someMethod() throws InterruptedException, IOException {
         producer.send(new ProducerRecord<>("topic", "test"));
-        producer.close();
     }
 }
 ```
 
-### Streaming messages
+{{% callout warning %}}
+Do not explicitly close the producer, it will be automatically closed on application shutdown.
+{{% /callout %}}
 
-To stream Kafka messages, create a stream class which implements the {{< java "org.seedstack.kafka.spi.MessageStream" >}}
-interface and is annotated with {{< java "org.seedstack.kafka.spi.Stream" "@" >}}:
+## Receiving
+
+To receive Kafka records, create a class implementing the {{< java "org.seedstack.kafka.ConsumerListener" >}}
+interface and annotated with {{< java "org.seedstack.kafka.KafkaListener" "@" >}}:
 
 ```java
-@Stream("stream1")
-public class MyMessageStream implements MessageStream<Integer, String> {
+@KafkaListener(value = "consumer1", topics = "someTopic")
+public class MyConsumerListener implements ConsumerListener<Integer, String> {
     @Logging
     private Logger logger;
 
     @Override
-    public void onStream(KStream<Integer, String> stream) {
-        stream.peek((key, value) -> {
-            logger.info("Stream test: Key [{}], Value [{}]", key, value);
-        }).to("topic");
+    public void onConsumerRecord(ConsumerRecord<Integer, String> r) {
+        logger.info("Received {}:{}", r.key(), r.value());
     }
 
     @Override
-    public void onException(Throwable cause) {
-        logger.error(cause.getMessage(), cause);
+    public void onException(Exception e) throws Exception {
+        // process any exception and re-throw an exception if reception must be temporary stopped 
     }
 }
 ```
+
+{{% callout info %}}
+If an exception is re-thrown from the `onException()` method, the reception will temporarily stop and the underlying
+consumer will be gracefully shutdown. A new attempt, with new consumer and listener instances, will be scheduled after
+the retry delay. 
+{{% /callout %}}
+
+Using the annotation, you can specify:
+
+* The name of the consumer in configuration that will be used to create the underlying consumer.
+* The topic or the topic regular expression pattern to subscribe to.
+* The delay to wait before retry in milliseconds.
+
+## Streaming
+
+To build a Kafka stream subscribed to one or more topic(s), create a class implementing the {{< java "org.seedstack.kafka.StreamBuilder" >}}
+interface and annotated with {{< java "org.seedstack.kafka.KafkaListener" "@" >}}:
+
+```java
+@KafkaListener(value = "stream1", topics = "someTopic")
+public class MyStreamBuilder implements StreamBuilder<Integer, String> {
+    @Logging
+    private Logger logger;
+
+    @Override
+    public void buildStream(KStream<Integer, String> stream) {
+        stream.foreach((key, value) -> {
+            logger.info("Processed: {}:{}", key, value);
+        });
+    }
+
+    @Override
+    public void onException(Exception e) {
+        // process any exception and re-throw an exception if reception must be temporary stopped 
+    }
+}
+
+```
+
+{{% callout info %}}
+If an exception is re-thrown from the `onException()` method, the streaming will temporarily stop and the underlying
+stream client will be gracefully shutdown. A new attempt, with new stream client and builder instances, will be 
+scheduled after the retry delay. 
+{{% /callout %}}
+
+Using the annotation, you can specify:
+
+* The name of the stream in configuration that will be used to create the underlying stream client.
+* The topic or the topic regular expression pattern to subscribe to.
+* The delay to wait before retry in milliseconds.
