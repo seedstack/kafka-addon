@@ -46,17 +46,17 @@ kafka:
       properties:
         property1: value1
   producers:
-    # True if the producer is to be used with transactions, false otherwise
-    transactional: (boolean)
     # Configured Kafka producer with the name of the producer as key
     producer1:
       # Kafka properties for configuring the producer
       properties:
         property1: value1
-
 ```
 {{% /config %}}
-    
+
+{{% callout info %}}
+To enable transactions for a particular producer, specify the `transactional.id` property on the producer with a unique id. Then use the Kafka transactional API to send messages.
+{{% /callout %}}
 
 ## Publishing 
 
