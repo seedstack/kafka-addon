@@ -10,10 +10,13 @@ package org.seedstack.kafka.clients;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -32,6 +35,9 @@ public class KafkaClientsIT {
     @Inject
     @Named("consumerTest")
     private Consumer<Integer, String> consumer;
+    @Inject
+    @Named("consumerTest")
+    private Provider<Consumer<Integer, String>> consumerProvider;
 
     @Test
     public void producerIsInjectable() {
@@ -41,6 +47,17 @@ public class KafkaClientsIT {
     @Test
     public void consumerIsInjectable() {
         assertThat(consumer).isNotNull();
+    }
+
+    @Test
+    public void multipleConsumerCanBeInjected() {
+        Set<Consumer<Integer, String>> consumers = new HashSet<>();
+        for (int i = 0; i < 4; i++) {
+            Consumer<Integer, String> newConsumer = consumerProvider.get();
+            assertThat(consumers).doesNotContain(newConsumer);
+            consumers.add(newConsumer);
+        }
+        assertThat(consumers).hasSize(4);
     }
 
     @Test

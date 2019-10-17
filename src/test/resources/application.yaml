@@ -9,7 +9,6 @@
 kafka:
   streams:
     streamTest:
-      topics: [testStreams]
       properties:
         application.id: kafkaStreamTest
         bootstrap.servers: localhost:9092
