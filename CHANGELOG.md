@@ -1,3 +1,7 @@
+# Version 2.0.1 (2020-08-05)
+
+* [chg] Updated for seed 3.10+
+
 # Version 2.0.0 (2019-03-08)
 
 * [new] Automatic retry of failing pollers and streams.

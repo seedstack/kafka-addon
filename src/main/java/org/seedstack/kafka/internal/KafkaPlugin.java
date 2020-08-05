@@ -1,27 +1,17 @@
 /*
- * Copyright © 2013-2019, The SeedStack authors <http://seedstack.org>
+ * Copyright © 2013-2020, The SeedStack authors <http://seedstack.org>
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-
 package org.seedstack.kafka.internal;
-
-import static org.seedstack.seed.SeedException.createNew;
-import static org.seedstack.shed.reflect.Classes.cast;
 
 import com.google.common.base.Strings;
 import io.nuun.kernel.api.plugin.InitState;
 import io.nuun.kernel.api.plugin.context.Context;
 import io.nuun.kernel.api.plugin.context.InitContext;
 import io.nuun.kernel.api.plugin.request.ClasspathScanRequest;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import net.jodah.typetools.TypeResolver;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
@@ -34,6 +24,11 @@ import org.seedstack.seed.core.internal.AbstractSeedPlugin;
 import org.seedstack.shed.reflect.Classes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+
+import static org.seedstack.seed.SeedException.createNew;
+import static org.seedstack.shed.reflect.Classes.cast;
 
 public class KafkaPlugin extends AbstractSeedPlugin {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaPlugin.class);
@@ -56,7 +51,7 @@ public class KafkaPlugin extends AbstractSeedPlugin {
     @Override
     public Collection<ClasspathScanRequest> classpathScanRequests() {
         return classpathScanRequestBuilder()
-                .specification(KafkaListenerSpecification.INSTANCE)
+                .predicate(KafkaListenerPredicate.INSTANCE)
                 .build();
     }
 
@@ -79,7 +74,7 @@ public class KafkaPlugin extends AbstractSeedPlugin {
                 .forEach(c -> messageConsumers.put(c.getName(), c));
 
         // Detect consumer record listeners
-        initContext.scannedTypesBySpecification().get(KafkaListenerSpecification.INSTANCE)
+        initContext.scannedTypesByPredicate().get(KafkaListenerPredicate.INSTANCE)
                 .stream()
                 .filter(ConsumerListener.class::isAssignableFrom)
                 .map(c -> new ConsumerListenerHandler<>(cast(c)))
@@ -87,7 +82,7 @@ public class KafkaPlugin extends AbstractSeedPlugin {
 
         if (Classes.optional("org.apache.kafka.streams.kstream.KStream").isPresent()) {
             // Detect stream handlers
-            initContext.scannedTypesBySpecification().get(KafkaListenerSpecification.INSTANCE)
+            initContext.scannedTypesByPredicate().get(KafkaListenerPredicate.INSTANCE)
                     .stream()
                     .filter(StreamBuilder.class::isAssignableFrom)
                     .map(c -> new StreamListenerHandler<>(cast(c)))
