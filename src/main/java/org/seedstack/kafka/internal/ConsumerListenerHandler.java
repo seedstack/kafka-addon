@@ -7,18 +7,7 @@
  */
 package org.seedstack.kafka.internal;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.inject.Injector;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import javax.inject.Inject;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -30,6 +19,18 @@ import org.seedstack.kafka.KafkaListener;
 import org.seedstack.seed.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class ConsumerListenerHandler<K, V> implements Runnable, ListenerHandler {
     private static final Duration POLLING_DELAY = Duration.ofMillis(1000);
@@ -60,6 +61,7 @@ class ConsumerListenerHandler<K, V> implements Runnable, ListenerHandler {
     public void run() {
         String consumerName = annotation.value();
         Duration retryDelay = Duration.ofMillis(annotation.retryDelay());
+        boolean errorOccurred = false;
 
         try {
             ConsumerListener<K, V> listener = injector.getInstance(listenerClass);
@@ -81,6 +83,7 @@ class ConsumerListenerHandler<K, V> implements Runnable, ListenerHandler {
                     }
                 } catch (Exception e1) {
                     // Ignore exception processing if we are stopping
+                    errorOccurred = true;
                     if (active.get()) {
                         try {
                             listener.onException(e1);
@@ -96,13 +99,15 @@ class ConsumerListenerHandler<K, V> implements Runnable, ListenerHandler {
         } finally {
             synchronized (this) {
                 if (consumer != null) {
-                    LOGGER.info("Synchronously committing Kafka consumer: {}", consumerName);
-                    consumer.commitSync();
+                    if (!errorOccurred) {
+                        LOGGER.info("Synchronously committing Kafka consumer: {}", consumerName);
+                        consumer.commitSync();
+                    }
                     LOGGER.info("Closing Kafka consumer: {}", consumerName);
                     try {
                         consumer.close();
                     } catch (Exception e) {
-                        LOGGER.warn("Unable to properly close Kafka consumer: {}", e);
+                        LOGGER.warn("Unable to properly close Kafka consumer: {}", consumerName, e);
                     }
                 }
             }

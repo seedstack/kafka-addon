@@ -1,3 +1,7 @@
+# Version 2.0.2 (2020-09-30)
+
+* [fix] Avoid wrongly committing Kafka consumer after an error, which consumed the message without any chance to process it.
+
 # Version 2.0.1 (2020-08-05)
 
 * [chg] Updated for seed 3.10+
